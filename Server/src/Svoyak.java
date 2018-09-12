@@ -14,26 +14,14 @@ public class Svoyak extends Thread {
         log("New connection with client# " + clientNumber + " at " + socket);
     }
 
-    /**
-     * Services this thread's client by first sending the
-     * client a welcome message then repeatedly reading strings
-     * and sending back the capitalized version of the string.
-     */
     public void run() {
         try {
 
-            // Decorate the streams so we can send characters
-            // and not just bytes.  Ensure output is flushed
-            // after every newline.
             BufferedReader in = new BufferedReader(
                     new InputStreamReader(socket.getInputStream()));
             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
 
-            // Send a welcome message to the client.
-            out.println("Enter a line with only a period to quit");
 
-            // Get messages from the client, line by line; return them
-            // capitalized
             while (true) {
                 String input = in.readLine();
                 if (input == null || input.equals(".")) {
@@ -48,16 +36,12 @@ public class Svoyak extends Thread {
             try {
                 socket.close();
             } catch (IOException e) {
-                log("Couldn't close a socket, what's going on?");
+                log("Couldn't close a socket");
             }
             log("Connection with client# " + clientNumber + " closed");
         }
     }
 
-    /**
-     * Logs a simple message.  In this case we just write the
-     * message to the server applications standard output.
-     */
     private void log(String message) {
         System.out.println(message);
     }
