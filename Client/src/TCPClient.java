@@ -6,47 +6,99 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.util.Scanner;
 
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
-
-
-public class TCPClient {
-
-    private BufferedReader in;
-    private PrintWriter out;
-
-
-    public TCPClient() {
-        String response;
-        try{
-            response = in.readLine();
-            if (response == null || response.equals("")) {
-                System.exit(0);
+class Chat {
+    boolean flag = true;
+    Scanner sc = new Scanner(System.in);
+    public synchronized void Question(String question) {
+        if (flag) {
+            try {
+                wait();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
-        } catch (IOException ex) {
-            response = "Error: " + ex;
         }
-        System.out.println(response);
+        System.out.println("Server writes " + question);
+        flag = false;
+        notify();
     }
 
+    public synchronized void Answer() {
+        if (flag) {
+            try {
+                wait();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
 
-    public void connectToServer() throws IOException {
-
-        Socket socket = new Socket(InetAddress.getLocalHost(), 9898);
-        in = new BufferedReader(
-                new InputStreamReader(socket.getInputStream()));
-        out = new PrintWriter(socket.getOutputStream(), true);
-
-        String message = in.readLine();
-        System.out.println(message);
+        System.out.println("Client writes : " + sc.nextLine());
+        flag = true;
+        notify();
     }
+}
+class T1 implements Runnable {
+    Chat m;
+
+    public T1(Chat m1) {
+        this.m = m1;
+        new Thread(this, "Question").start();
+    }
+
+    public void run() {
+        // Socker initialisation
+        Socket socket = null;
+        try {
+            socket = new Socket(InetAddress.getLocalHost(),9898);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
+        while(true) {
+            BufferedReader in = null;
+            try {
+                in = new BufferedReader(
+                        new InputStreamReader(socket.getInputStream()));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            try {
+                m.Question(in.readLine());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+}
+
+class T2 implements Runnable {
+    Chat m;
+
+    public T2(Chat m2) {
+        this.m = m2;
+        new Thread(this, "Answer").start();
+    }
+
+    public void run() {
+        while(true){
+            m.Answer();
+        }
+    }
+}
+public class TCPClient extends Thread {
+
 
     public static void main(String[] args) throws Exception {
-        TCPClient client = new TCPClient();
-        client.connectToServer();
+        Chat m = new Chat();
+        new T1(m);
+        new T2(m);
     }
 }
